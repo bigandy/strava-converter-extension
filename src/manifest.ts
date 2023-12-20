@@ -3,9 +3,9 @@ import pkg from "../package.json";
 const sharedManifest = {
   content_scripts: [
     {
-      js: ["src/entries/contentScript/github-replace-merge.ts"],
-      matches: ["https://strava.com/*"],
-      run_at: "document_end",
+      js: ["src/entries/contentScript/strava-replace-unit.ts"],
+      css: ["src/entries/contentScript/style.css"],
+      matches: ["https://*/*", "http://*/*"],
     },
   ],
   icons: {

@@ -1,0 +1,3 @@
+*:has(> abbr.unit) {
+  outline: 0.5px dotted red;
+}
