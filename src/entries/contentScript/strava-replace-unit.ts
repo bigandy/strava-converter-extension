@@ -1,14 +1,19 @@
 import browser from "webextension-polyfill";
 import { messages } from "../consts/messages";
 import { convertPace } from "./convertPace";
+import {
+  METERS_TO_FEET,
+  FEET_TO_METERS,
+  KM_TO_MILES,
+  MILES_TO_KM,
+} from "../consts/conversions";
 
 browser.runtime.onMessage.addListener(function (request) {
   // listen for messages sent from background.js
-  if (request.message === messages.URL_UPDATED) {
-    run();
-  }
-
-  if (request.message === messages.SETTING_UPDATED) {
+  if (
+    request.message === messages.URL_UPDATED ||
+    request.message === messages.SETTING_UPDATED
+  ) {
     run();
   }
 });
@@ -62,15 +67,15 @@ const runConversion = (node: any, conversionDirection: ConversionDirection) => {
     let newValue = "";
     let newPrefix = "";
     if (unit === "meters") {
-      newValue = `${Number(value * 3.280839895).toFixed(2)}`;
+      newValue = `${Number(value * METERS_TO_FEET).toFixed(2)}`;
       newUnit = "feet";
       newPrefix = "ft";
     } else if (unit === "kilometers") {
-      newValue = `${Number(value * 0.6213712).toFixed(2)}`;
+      newValue = `${Number(value * KM_TO_MILES).toFixed(2)}`;
       newUnit = "miles";
       newPrefix = "mi";
     } else if (unit === "kilometers per hour") {
-      newValue = `${Number(value * 0.6213712).toFixed(2)}`;
+      newValue = `${Number(value * KM_TO_MILES).toFixed(2)}`;
       newUnit = "miles per hour";
       newPrefix = "mi/h";
     } else if (unit === "minutes per kilometer") {
@@ -78,11 +83,11 @@ const runConversion = (node: any, conversionDirection: ConversionDirection) => {
       newUnit = "minutes per mile";
       newPrefix = "/mi";
     } else if (unit === "miles") {
-      newValue = `${Number(value * 1.609344).toFixed(2)}`;
+      newValue = `${Number(value * MILES_TO_KM).toFixed(2)}`;
       newUnit = "kilometers";
       newPrefix = "km";
     } else if (unit === "miles per hour") {
-      newValue = `${Number(value * 1.609344).toFixed(2)}`;
+      newValue = `${Number(value * MILES_TO_KM).toFixed(2)}`;
       newUnit = "kilometers per hour";
       newPrefix = "km/h";
     } else if (unit === "minutes per mile") {
@@ -90,7 +95,7 @@ const runConversion = (node: any, conversionDirection: ConversionDirection) => {
       newUnit = "minutes per kilometer";
       newPrefix = "/km";
     } else if (unit === "feet") {
-      newValue = `${Number(value * 0.3048).toFixed(2)}`;
+      newValue = `${Number(value * FEET_TO_METERS).toFixed(2)}`;
       newUnit = "meters";
       newPrefix = "m";
     }
@@ -139,7 +144,6 @@ function walkAndObserve(
           // Should never operate on user-editable content
           continue;
         } else {
-          console.log(node.nodeType === 3);
           // Otherwise, find text nodes within the given node and replace text
           walk(node, conversion);
         }

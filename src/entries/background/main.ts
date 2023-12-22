@@ -1,10 +1,6 @@
 import browser from "webextension-polyfill";
 import { messages } from "../consts/messages";
 
-browser.runtime.onInstalled.addListener(() => {
-  console.log("Extension installed");
-});
-
 browser.tabs.onUpdated.addListener(function (tabId, changeInfo) {
   // read changeInfo data and do something with it
   // like send the new url to contentscripts.js
@@ -17,12 +13,8 @@ browser.tabs.onUpdated.addListener(function (tabId, changeInfo) {
 
 browser.runtime.onInstalled.addListener(() => {
   browser.storage.sync.get(["stravaConverterValue"]).then((result) => {
-    if (result.stravaConverterValue) {
-      console.log("strava converter value is already set", {
-        stravaConverterValue: result.stravaConverterValue,
-      });
-    } else {
-      console.log("no strava converter value");
+    if (!result.stravaConverterValue) {
+      // console.log("no strava converter value");
       browser.storage.sync.set({
         stravaConverterValue: "all",
       });
