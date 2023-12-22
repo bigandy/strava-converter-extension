@@ -1,5 +1,6 @@
 import browser from "webextension-polyfill";
 import { messages } from "../consts/messages";
+import { convertPace } from "./convertPace";
 
 browser.runtime.onMessage.addListener(function (request) {
   // listen for messages sent from background.js
@@ -12,22 +13,32 @@ browser.runtime.onMessage.addListener(function (request) {
   }
 });
 
-function walk(rootNode: any, conversion: Conversion) {
+function walk(rootNode: any, conversion: ConversionDirection) {
   // Find all the text nodes in rootNode
   var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, null),
     node;
 
   // Modify each text node's value
   while ((node = walker.nextNode())) {
+    if (node.nodeType === 3) {
+      // ignore text nodes
+      return;
+    }
     runConversion(node, conversion);
   }
 }
 
-const runConversion = (node: any, conversion: Conversion) => {
+const runConversion = (node: any, conversionDirection: ConversionDirection) => {
   const conversionTerms =
-    conversion === "imperial-metric"
-      ? ["miles", "feet", "miles per hour"]
-      : ["meters", "kilometers", "kilometers per hour"];
+    conversionDirection === "imperial-metric"
+      ? ["miles", "feet", "miles per hour", "minutes per mile"]
+      : [
+          "meters",
+          "kilometers",
+          "kilometers per hour",
+          "minutes per kilometer",
+        ];
+
   const allAbbrs = node.querySelectorAll("*:has(> abbr.unit)");
   const filteredAbbrs = [...allAbbrs]
     .map((abbr) => {
@@ -43,7 +54,10 @@ const runConversion = (node: any, conversion: Conversion) => {
     });
 
   filteredAbbrs.forEach(function ({ abbr, unit }) {
-    const value = abbr.textContent.match(/\d+((.|,)\d+)?/)?.[0];
+    const value = abbr.textContent
+      .match(/\d+((.|,)\d+)?/)?.[0]
+      .replaceAll(",", "");
+
     let newUnit = "";
     let newValue = "";
     let newPrefix = "";
@@ -59,6 +73,10 @@ const runConversion = (node: any, conversion: Conversion) => {
       newValue = `${Number(value * 0.6213712).toFixed(2)}`;
       newUnit = "miles per hour";
       newPrefix = "mi/h";
+    } else if (unit === "minutes per kilometer") {
+      newValue = convertPace(value, "miles");
+      newUnit = "minutes per mile";
+      newPrefix = "/mi";
     } else if (unit === "miles") {
       newValue = `${Number(value * 1.609344).toFixed(2)}`;
       newUnit = "kilometers";
@@ -67,6 +85,10 @@ const runConversion = (node: any, conversion: Conversion) => {
       newValue = `${Number(value * 1.609344).toFixed(2)}`;
       newUnit = "kilometers per hour";
       newPrefix = "km/h";
+    } else if (unit === "minutes per mile") {
+      newValue = convertPace(value, "kilometers");
+      newUnit = "minutes per kilometer";
+      newPrefix = "/km";
     } else if (unit === "feet") {
       newValue = `${Number(value * 0.3048).toFixed(2)}`;
       newUnit = "meters";
@@ -80,6 +102,7 @@ const runConversion = (node: any, conversion: Conversion) => {
 // Returns true if a node should *not* be altered in any way
 function isForbiddenNode(node: any) {
   return (
+    node.nodeType === 3 ||
     node.isContentEditable || // DraftJS and many others
     (node.parentNode && node.parentNode.isContentEditable) || // Special case for Gmail
     (node.tagName &&
@@ -88,12 +111,12 @@ function isForbiddenNode(node: any) {
   );
 }
 
-type Conversion = "imperial-metric" | "metric-imperial";
+type ConversionDirection = "imperial-metric" | "metric-imperial";
 
 // Walk the doc (document) body and observe the body
 function walkAndObserve(
   document: any,
-  conversion: Conversion = "metric-imperial"
+  conversion: ConversionDirection = "metric-imperial"
 ) {
   runConversion(document.body, conversion);
 
@@ -105,9 +128,6 @@ function walkAndObserve(
     },
     bodyObserver;
 
-  // Do the initial text replacements in the document body
-  // walk(doc.body, forwards);
-
   function observerCallback(mutations: any) {
     var i, node;
 
@@ -115,14 +135,11 @@ function walkAndObserve(
       for (i = 0; i < mutation.addedNodes.length; i++) {
         node = mutation.addedNodes[i];
 
-        console.log({ node });
         if (isForbiddenNode(node)) {
           // Should never operate on user-editable content
           continue;
-        } else if (node.nodeType === 3) {
-          // Replace the text for text nodes
-          // handleText(node, forwards);
         } else {
+          console.log(node.nodeType === 3);
           // Otherwise, find text nodes within the given node and replace text
           walk(node, conversion);
         }
