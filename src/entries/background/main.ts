@@ -40,3 +40,22 @@ browser.storage.onChanged.addListener(function (changes, area) {
       });
   }
 });
+
+browser.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.message === messages.UNIT_TOGGLED) {
+    console.log({ request, sender });
+
+    browser.storage.sync
+      .get("stravaConverterValue")
+      .then(({ stravaConverterValue }) => {
+        console.log({ stravaConverterValue });
+
+        const newValue =
+          stravaConverterValue === "imperial-metric"
+            ? "metric-imperial"
+            : "imperial-metric";
+        browser.storage.sync.set({ stravaConverterValue: newValue });
+        sendResponse();
+      });
+  }
+});

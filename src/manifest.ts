@@ -3,7 +3,10 @@ import pkg from "../package.json";
 const sharedManifest = {
   content_scripts: [
     {
-      js: ["src/entries/contentScript/strava-replace-unit.ts"],
+      js: [
+        "src/entries/contentScript/strava-replace-unit.ts",
+        "src/entries/contentScript/strava-toggle-units.ts",
+      ],
       css: ["src/entries/contentScript/style.css"],
       matches: ["https://*/*", "http://*/*"],
     },
@@ -11,7 +14,7 @@ const sharedManifest = {
   icons: {
     "128": "icons/strava_128.png",
   },
-  permissions: ["storage"],
+  permissions: ["storage", "tabs"],
   name: "Strava Unit Converter",
   version: "0.0.0.1",
   description: "Strava Unit Converter",
